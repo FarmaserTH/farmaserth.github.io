@@ -3,7 +3,7 @@
 <link rel="icon" type="image/png" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Talento Humano"><meta name="application-name" content="Gestor Talento Humano">
 <style>html,body{margin:0}body{font-size:14px}[hidden]{display:none!important}img{max-width:100%}</style>
-<script>window.VER_APP='28/11/2026 11:06';if('serviceWorker' in navigator&&location.protocol==='https:')addEventListener('load',()=>{let rl=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!rl&&navigator.serviceWorker.controller){rl=true;location.reload()}});navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update();setInterval(()=>r.update(),30*60*1000)}).catch(()=>{})});addEventListener('load',()=>{const l=document.getElementById('lock');if(l)l.insertAdjacentHTML('beforeend','<p style="text-align:center;font-size:.72rem;opacity:.6;margin:8px 0 0">Versión del '+window.VER_APP+'</p>')})</script></head><body><title>Gestor Talento Humano</title>
+<script>window.VER_APP='28/11/2026 11:29';if('serviceWorker' in navigator&&location.protocol==='https:')addEventListener('load',()=>{let rl=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!rl&&navigator.serviceWorker.controller){rl=true;location.reload()}});navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update();setInterval(()=>r.update(),30*60*1000)}).catch(()=>{})});addEventListener('load',()=>{const l=document.getElementById('lock');if(l)l.insertAdjacentHTML('beforeend','<p style="text-align:center;font-size:.72rem;opacity:.6;margin:8px 0 0">Versión del '+window.VER_APP+'</p>')})</script></head><body><title>Gestor Talento Humano</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -1225,6 +1225,39 @@ function renderHor(){
   $('#v-hor').innerHTML=h;bindHor();lockUI();
 }
 /* ---------- horario del mes completo: ver, generar y ajustar día a día ---------- */
+/* ---------- asignar turnos por semanas (apertura / intermedio / cierre) con descanso fijo o alterno ---------- */
+const HROT_DESC=[['1','Lunes'],['2','Martes'],['12','Alterna lunes y martes'],['21','Alterna martes y lunes'],['3','Miércoles'],['4','Jueves'],['5','Viernes'],['6','Sábado'],['0','Domingo'],['','Sin descanso fijo']];
+function hRotCiclos(){const out=[];gruposTurnos().forEach(([g,L])=>{const c=L.filter(t=>/^(apertura|intermedio|cierre)/.test(nrm(t.nombre)));if(c.length>=2)out.push({id:'c:'+g,label:`${g}: ${c.map(t=>t.nombre.split(' ')[0]).join(' → ')}`,t:c.map(t=>t.code)})});
+  hTurnos().forEach(t=>out.push({id:'f:'+t.code,label:`Siempre ${t.nombre}`,t:[t.code]}));return out}
+function hUltTurno(e,antes){for(let L=addDays(lunesDe(antes),-7),n=0;n<10;L=addDays(L,-7),n++){const f=hFila(e.id,L);if(f&&(f.t||(f.c||[]).some(Boolean)))return f}return null}
+function hRotDef(e,ini){const C=hRotCiclos(),g=S.config.hRotEmp&&S.config.hRotEmp[e.id];const u=hUltTurno(e,ini),ut=u&&(u.t||(u.c||[]).find(c=>hTurno(c)));
+  let cic=g&&C.find(c=>c.id===g.ciclo);if(!cic&&ut)cic=C.find(c=>c.id.startsWith('c:')&&c.t.includes(ut))||C.find(c=>c.id==='f:'+ut);
+  if(!cic){const sd=nrm(e.sede||'');cic=C.find(c=>c.id.startsWith('c:')&&sd&&nrm(c.id).includes(sd.split(' ').pop()))}
+  if(!cic)return null;let i0=0;if(ut&&cic.t.includes(ut))i0=(cic.t.indexOf(ut)+1)%cic.t.length;else if(g&&g.ini!=null)i0=+g.ini%cic.t.length;
+  let desc=g&&g.desc!=null?g.desc:'';if(!g&&u&&u.dd>=0){desc=String((semIniD()+u.dd)%7)}if(!g&&!desc)desc='1';
+  return {ciclo:cic.id,ini:i0,desc}}
+function hRotPanel(ini,fin,emps){const C=hRotCiclos(),P=UI.hmRotSel||(UI.hmRotSel={});
+  const filas=emps.map(e=>{const d=P[e.id]||(P[e.id]=hRotDef(e,ini)||{ciclo:'',ini:0,desc:'1',no:true});return {e,d}});
+  const opC=sel=>`<option value="">— No asignar</option>`+C.map(c=>`<option value="${esc(c.id)}"${sel===c.id?' selected':''}>${esc(c.label)}</option>`).join('');
+  return `<div class="panel" style="padding:12px 14px;margin-bottom:10px;border-left:4px solid var(--accent)"><h3 style="margin:0 0 4px">Asignar turnos por semanas</h3>
+   <p class="status" style="margin:0 0 8px">Escoja el ciclo de cada persona (por ejemplo apertura → intermedio → cierre), con qué turno empieza la primera semana del mes y su día de descanso. La app arma todas las semanas del mes: cada semana sigue el turno siguiente del ciclo. Las vacaciones, incapacidades y demás novedades que ya estén escritas se respetan.</p>
+   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:8px;background:var(--paper);padding:8px;border-radius:8px"><b style="align-self:center;flex-basis:100%">Para todos los marcados:</b>
+    <label class="f" style="margin:0;flex:0 1 330px">Ciclo<select id="hrAllC">${opC('')}</select></label><label class="f" style="margin:0;flex:0 1 220px">Descanso<select id="hrAllD"><option value="-">—</option>${HROT_DESC.map(([k,t])=>`<option value="${k}">${t}</option>`).join('')}</select></label>
+    <button class="free" id="hrAllA">Aplicar a los marcados</button><button class="free ghost" id="hrEsc" title="Reparte el turno de la primera semana para que cada turno quede cubierto">Escalonar: repartir apertura, intermedio y cierre</button></div>
+   <div class="scroll"><table><thead><tr><th><input type="checkbox" id="hrTodos" checked aria-label="Marcar todos"></th><th>Empleado</th><th>Ciclo de turnos</th><th>Primera semana del mes</th><th>Descanso</th><th>Así quedan las semanas</th></tr></thead><tbody>${filas.map(({e,d})=>{const c=C.find(x=>x.id===d.ciclo),L0=lunesDe(ini),sem=[];for(let L=L0,k=0;L<=fin;L=addDays(L,7),k++)sem.push(c?(hTurno(c.t[(+d.ini+k)%c.t.length])||{}).nombre:'');
+     return `<tr><td><input type="checkbox" data-hrm="${e.id}"${d.no?'':' checked'}></td><td><b>${esc(e.nombre)}</b><span class="status" style="display:block">${esc(e.sede||e.cargo||'')}</span></td><td><select data-hrc="${e.id}">${opC(d.ciclo)}</select></td>
+     <td>${c?`<select data-hri="${e.id}">${c.t.map((t,i)=>`<option value="${i}"${+d.ini===i?' selected':''}>${esc((hTurno(t)||{}).nombre||t)}</option>`).join('')}</select>`:'—'}</td>
+     <td><select data-hrd="${e.id}">${HROT_DESC.map(([k,t])=>`<option value="${k}"${String(d.desc)===k?' selected':''}>${t}</option>`).join('')}</select></td><td class="status" style="white-space:normal;font-size:.75rem">${c?sem.map((n,k)=>`S${k+1}: ${esc(String(n||'').split(' ')[0])}`).join(' · '):''}</td></tr>`}).join('')}</tbody></table></div>
+   <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center"><button class="free primary" id="hrGo">Asignar el mes a los marcados</button><label class="chk"><input type="checkbox" id="hrSolo"> Solo las semanas que están vacías</label><button class="free ghost" id="hrCerrar">Cerrar</button></div></div>`}
+function hRotAplicar(ini,fin,ids,soloVacias){const C=hRotCiclos(),P=UI.hmRotSel||{},L0=lunesDe(ini);let n=0;S.config.hRotEmp=S.config.hRotEmp||{};
+  ids.forEach(id=>{const e=S.emps[id],d=P[id],c=d&&C.find(x=>x.id===d.ciclo);if(!e||!c)return;S.config.hRotEmp[id]={ciclo:d.ciclo,ini:+d.ini,desc:d.desc};
+    for(let L=L0,k=0;L<=fin;L=addDays(L,7),k++){const cur=hFila(id,L);if(soloVacias&&cur&&cur.c&&cur.c.some(Boolean))continue;
+      const t=c.t[(+d.ini+k)%c.t.length],tt=hTurno(t),ds=String(d.desc||''),dw=ds.length===2?+ds[k%2]:ds===''?-1:+ds,dd=dw<0?-1:(dw-semIniD()+7)%7;
+      const prev=cur&&cur.c?cur.c.slice():[],f={t,alm:(tt&&tt.almH)||'',dd,c:['','','','','','','']};hGen(f);
+      prev.forEach((x,i)=>{if(x&&esHCod(x)&&x!=='D')f.c[i]=x});
+      for(let i=0;i<7;i++){const dia=addDays(L,i);if((e.ingreso&&dia<e.ingreso)||(e.retiro&&dia>e.retiro))f.c[i]=''}
+      hSet(L,id);S.hor[L].asig[id]=f;n++}});
+  for(let L=L0;L<=fin;L=addDays(L,7))hGuardar(L);saveLocal();return n}
 function hMesAct(){if(!/^\d{4}-\d{2}$/.test(UI.hm||'')){const t=todayCO(),[y,m,d]=t.split('-').map(Number);const n=new Date(Date.UTC(y,m-1+(d>=20?1:0),1));UI.hm=ymd(n).slice(0,7)}return UI.hm}
 function hMesRango(){const mes=hMesAct(),[y,m]=mes.split('-').map(Number);return {mes,ini:`${mes}-01`,fin:ymd(new Date(Date.UTC(y,m,0))),y,m}}
 function hRotar(p,swap,move){const r=structuredClone(p),[a,b]=S.config.hrot||['AP','CI'];
@@ -1244,8 +1277,9 @@ function horMes(){
   <div class="panel" style="padding:10px 14px;margin-bottom:10px"><b>Generar el horario de ${nom}</b>
    <p class="status" style="margin:4px 0 8px">Toma la última semana con horario antes de cada semana vacía y la repite semana a semana hasta fin de mes, con las opciones de rotación que marque. ${tieneBase?`Semana de partida: la del ${fd(bse)} ${bse.slice(0,4)}.`:'<b>Primero arme al menos una semana</b> en «Registro fácil» o «Semana por turnos».'}</p>
    <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><label class="chk"><input type="checkbox" id="hmSwap" checked> Intercambiar ${esc((S.config.hrot||['AP','CI'])[0])} ⇄ ${esc((S.config.hrot||['AP','CI'])[1])} cada semana</label><label class="chk"><input type="checkbox" id="hmMove" checked> Correr el descanso un día cada semana</label><label class="chk"><input type="checkbox" id="hmOver"> Reemplazar también las semanas que ya tienen horario</label>
-   <button class="free primary" id="hmGen"${tieneBase?'':' disabled'}>Generar ${nom}</button>${UI.hmAskClr?`<span class="confirm">¿Borrar el horario de todo ${nom}? <button class="free danger" id="hmClrY">Sí, borrar</button><button class="free" id="hmClrN">No</button></span>`:'<button class="ghost danger free" id="hmClr">Limpiar el mes</button>'}</div></div>`;
+   <button class="free primary" id="hmRot">Asignar turnos por semanas</button><button class="free" id="hmGen"${tieneBase?'':' disabled'}>Repetir desde la última semana</button>${UI.hmAskClr?`<span class="confirm">¿Borrar el horario de todo ${nom}? <button class="free danger" id="hmClrY">Sí, borrar</button><button class="free" id="hmClrN">No</button></span>`:'<button class="ghost danger free" id="hmClr">Limpiar el mes</button>'}</div></div>`;
   if(!emps.length)return h+`<div class="panel empty"><b>No hay empleados${UI.sede?' en este centro de costo':''} en ${nom}</b></div>`;
+  if(UI.hmRot)h+=hRotPanel(ini,fin,emps);
   h+=vac?`<div class="alert" style="margin-bottom:8px">${vac} empleado(s) tienen días sin horario este mes. Use «Generar» o toque cada día para escogerlo.</div>`:`<div class="alert info" style="margin-bottom:8px">Todo el mes tiene horario. Toque cualquier día para cambiarlo.</div>`;
   h+=`<div class="panel scroll fija"><table class="malla hmes" style="font-size:.78rem"><thead><tr><th class="sticky">Empleado</th>${dias.map(f=>{const fe=festivo(f),dw=dow(f);return `<th class="day${dw===0?' dom':''}${fe?' fest':''}" style="min-width:34px;padding:3px 2px"${fe?` title="${esc(fe)}"`:''}>${['D','L','M','M','J','V','S'][dw]}<span class="d">${+f.slice(8)}</span></th>`}).join('')}<th class="n">Horas</th><th class="n">Dom/fest trabajados</th><th class="n">Descansos</th></tr></thead><tbody>`;
   emps.forEach(e=>{let min=0,df=0,desc=0;const semanas=new Set(dias.map(lunesDe));semanas.forEach(L=>hSemana(e.id,L).forEach(x=>{if(x.f>=ini&&x.f<=fin)min++}));
@@ -1266,6 +1300,18 @@ function bindHorMes(){const re=()=>renderHor();const {mes,ini,fin}=hMesRango();
         if(ws>=L0&&(!llena||over)){hSet(ws,e.id);S.hor[ws].asig[e.id]=nueva;plant[e.id]=nueva;t=true}else plant[e.id]=llena?cur:nueva});
       if(t){hGuardar(ws);cnt++}}
     re();toast(cnt?`Horario generado: ${cnt} semana(s) de ${new Date(ini+'T12:00:00Z').toLocaleDateString('es-CO',{month:'long',timeZone:'UTC'})}. Revise los festivos y ajuste lo que haga falta.`:'No había semanas vacías por llenar (marque «Reemplazar» para rehacerlas)')};
+  const ro=$('#hmRot');if(ro)ro.onclick=()=>{UI.hmRot=!UI.hmRot;if(UI.hmRot)UI.hmRotSel={};re();setTimeout(()=>{const p=document.querySelector('#hrGo');if(p)p.closest('.panel').scrollIntoView({block:'start'})},40)};
+  if(UI.hmRot){const P=UI.hmRotSel||(UI.hmRotSel={}),C=hRotCiclos();const sv=()=>re();
+    document.querySelectorAll('[data-hrc]').forEach(x=>x.onchange=()=>{const d=P[x.dataset.hrc];d.ciclo=x.value;d.ini=0;d.no=!x.value;sv()});
+    document.querySelectorAll('[data-hri]').forEach(x=>x.onchange=()=>{P[x.dataset.hri].ini=+x.value;sv()});
+    document.querySelectorAll('[data-hrd]').forEach(x=>x.onchange=()=>{P[x.dataset.hrd].desc=x.value;sv()});
+    document.querySelectorAll('[data-hrm]').forEach(x=>x.onchange=()=>{P[x.dataset.hrm].no=!x.checked});
+    const td=$('#hrTodos');if(td)td.onchange=()=>{document.querySelectorAll('[data-hrm]').forEach(x=>{x.checked=td.checked;P[x.dataset.hrm].no=!td.checked})};
+    const marcados=()=>[...document.querySelectorAll('[data-hrm]')].filter(x=>x.checked).map(x=>x.dataset.hrm);
+    $('#hrAllA').onclick=()=>{const c=$('#hrAllC').value,d=$('#hrAllD').value;marcados().forEach(id=>{if(c){P[id].ciclo=c;P[id].ini=0}if(d!=='-')P[id].desc=d});sv()};
+    $('#hrEsc').onclick=()=>{const cnt={};marcados().forEach(id=>{const d=P[id],c=C.find(x=>x.id===d.ciclo);if(!c||c.t.length<2)return;cnt[c.id]=cnt[c.id]||0;d.ini=cnt[c.id]%c.t.length;cnt[c.id]++});sv();toast('Listo: en cada ciclo, la primera semana queda repartida entre apertura, intermedio y cierre')};
+    $('#hrCerrar').onclick=()=>{UI.hmRot=false;re()};
+    $('#hrGo').onclick=()=>{const ids=marcados().filter(id=>P[id]&&P[id].ciclo);if(!ids.length)return toast('Marque al menos una persona con ciclo de turnos');const n=hRotAplicar(ini,fin,ids,$('#hrSolo').checked);bitacora(`Asignó por semanas los turnos de ${mes} a ${ids.length} empleado(s)`);UI.hmRot=false;re();toast(`Listo: ${ids.length} empleado(s), ${n} semanas asignadas. Revise los festivos y ajuste lo que necesite tocando el día.`)}}
   const cl=$('#hmClr');if(cl)cl.onclick=()=>{UI.hmAskClr=true;re()};const cn=$('#hmClrN');if(cn)cn.onclick=()=>{UI.hmAskClr=false;re()};
   const cy=$('#hmClrY');if(cy)cy.onclick=()=>{let n=0;for(let f=ini;f<=fin;f=addDays(f,1)){const L=lunesDe(f),w=S.hor[L];if(!w||!w.asig)continue;Object.entries(w.asig).forEach(([id,fl])=>{if(UI.sede&&(S.emps[id]||{}).sede!==UI.sede)return;if(fl.c&&fl.c[hIdx(f)]){fl.c[hIdx(f)]='';if(fl.dd===hIdx(f))fl.dd=-1;n++}})}
     for(let L=lunesDe(ini);L<=fin;L=addDays(L,7))if(S.hor[L])hGuardar(L);UI.hmAskClr=false;bitacora(`Limpió el horario de ${mes}`);re();toast(`Se borraron ${n} días del mes`)};
