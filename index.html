@@ -3,7 +3,7 @@
 <link rel="icon" type="image/png" href="favicon.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Talento Humano"><meta name="application-name" content="Gestor Talento Humano">
 <style>html,body{margin:0}body{font-size:14px}[hidden]{display:none!important}img{max-width:100%}</style>
-<script>window.VER_APP='26/11/2026 11:56';if('serviceWorker' in navigator&&location.protocol==='https:')addEventListener('load',()=>{let rl=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!rl&&navigator.serviceWorker.controller){rl=true;location.reload()}});navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update();setInterval(()=>r.update(),30*60*1000)}).catch(()=>{})});addEventListener('load',()=>{const l=document.getElementById('lock');if(l)l.insertAdjacentHTML('beforeend','<p style="text-align:center;font-size:.72rem;opacity:.6;margin:8px 0 0">Versión del '+window.VER_APP+'</p>')})</script></head><body><title>Gestor Talento Humano</title>
+<script>window.VER_APP='28/11/2026 11:06';if('serviceWorker' in navigator&&location.protocol==='https:')addEventListener('load',()=>{let rl=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!rl&&navigator.serviceWorker.controller){rl=true;location.reload()}});navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update();setInterval(()=>r.update(),30*60*1000)}).catch(()=>{})});addEventListener('load',()=>{const l=document.getElementById('lock');if(l)l.insertAdjacentHTML('beforeend','<p style="text-align:center;font-size:.72rem;opacity:.6;margin:8px 0 0">Versión del '+window.VER_APP+'</p>')})</script></head><body><title>Gestor Talento Humano</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -1180,9 +1180,10 @@ function renderHor(){
   hTurnos();UI.hw=lunesDe(UI.hw||todayCO());UI.hv=UI.hv||'fac';
   const L=UI.hw,dias=[0,1,2,3,4,5,6].map(i=>addDays(L,i));
   let h=`<div class="bar"><h2 class="grow">Horarios</h2>
-    <div class="seg" role="tablist" style="display:flex;gap:4px"><button class="free ${UI.hv==='fac'?'primary':'ghost'}" id="hvF">Registro fácil</button><button class="free ${UI.hv==='sem'?'primary':'ghost'}" id="hvS">Semana por turnos</button><button class="free ${UI.hv==='res'?'primary':'ghost'}" id="hvR">Resumen para la nómina</button><button class="free ${UI.hv==='tur'?'primary':'ghost'}" id="hvT">Turnos</button></div></div>`;
+    <div class="seg" role="tablist" style="display:flex;gap:4px"><button class="free ${UI.hv==='fac'?'primary':'ghost'}" id="hvF">Registro fácil</button><button class="free ${UI.hv==='sem'?'primary':'ghost'}" id="hvS">Semana por turnos</button><button class="free ${UI.hv==='mes'?'primary':'ghost'}" id="hvM">Mes completo</button><button class="free ${UI.hv==='res'?'primary':'ghost'}" id="hvR">Resumen para la nómina</button><button class="free ${UI.hv==='tur'?'primary':'ghost'}" id="hvT">Turnos</button></div></div>`;
   if(UI.hv==='fac'){$('#v-hor').innerHTML=h+horFacil();bindHor();lockUI();return}
   if(UI.hv==='res'){$('#v-hor').innerHTML=h+resumenHor();bindHor();lockUI();return}
+  if(UI.hv==='mes'){$('#v-hor').innerHTML=h+horMes();bindHor();bindHorMes();lockUI();return}
   if(UI.hv==='tur'){$('#v-hor').innerHTML=h+editorTurnos();bindHor();lockUI();return}
   const emps=hEmps(L),w=S.hor[L]||{asig:{}};
   h+=`<div class="bar"><div class="weeknav"><button class="free" id="hPrev" aria-label="Semana anterior">←</button><span class="lbl">${diasW()[0]} ${fd(dias[0])} – ${hExtra()?diasW()[0]+' '+fd(addDays(dias[0],7))+' '+addDays(dias[0],7).slice(0,4):diasW()[6]+' '+fd(dias[6])+' '+dias[6].slice(0,4)}</span><button class="free" id="hNext" aria-label="Semana siguiente">→</button><button class="ghost free" id="hHoy">Esta semana</button></div>${sedeSelect('hSede')}
@@ -1223,6 +1224,57 @@ function renderHor(){
   <p class="note">La semana va de ${diasWL()[0]} a ${diasWL()[6]}. Elija el <b>turno de la semana</b> y el <b>día de descanso</b> y la fila se llena sola; después puede cambiar cualquier día (vacaciones, incapacidad, permiso, «Otro…» para un horario distinto). ${S.config.sinExtras?`No se liquidan horas extras: todos trabajan ${esc(S.config.jornada)} horas semanales y lo adicional del domingo o festivo se paga como recargo dominical y festivo. `:`Son extra las horas que pasan de ${esc(S.config.jornada)} en la semana o de ${esc(S.config.topeDia||9)} en un mismo día (art. 161 CST), salvo para el personal de dirección, confianza y manejo. `}${S.config.domOrdinario?`Trabajadores de domingo a domingo con un día de descanso compensatorio entre semana: el domingo es día ordinario. Se pagan los festivos y el día de descanso si lo trabaja (recargo del ${Math.round(rateDF(L)*100)} %), y el recargo nocturno desde las ${esc(S.config.nocheIni)}. Si alguien trabaja su día de descanso, cambie ese día por su turno y deje el «Día de descanso» como estaba: la app lo paga como festivo.`:`Domingos y festivos se pagan ${S.config.dfHoraCompleta?'hora + ':''}recargo del ${Math.round(rateDF(L)*100)} %.`} <b>Todo pasa solo a la nómina</b>: no vuelva a digitar estas horas ni estos días en Novedades.</p>`;
   $('#v-hor').innerHTML=h;bindHor();lockUI();
 }
+/* ---------- horario del mes completo: ver, generar y ajustar día a día ---------- */
+function hMesAct(){if(!/^\d{4}-\d{2}$/.test(UI.hm||'')){const t=todayCO(),[y,m,d]=t.split('-').map(Number);const n=new Date(Date.UTC(y,m-1+(d>=20?1:0),1));UI.hm=ymd(n).slice(0,7)}return UI.hm}
+function hMesRango(){const mes=hMesAct(),[y,m]=mes.split('-').map(Number);return {mes,ini:`${mes}-01`,fin:ymd(new Date(Date.UTC(y,m,0))),y,m}}
+function hRotar(p,swap,move){const r=structuredClone(p),[a,b]=S.config.hrot||['AP','CI'];
+  if(swap){const sw=c=>c===a?b:c===b?a:c;r.t=sw(r.t);r.c=r.c.map(sw);const t=hTurno(r.t);if(t&&t.almH)r.alm=t.almH}
+  if(move&&r.dd>=0)r.dd=(r.dd+1)%7;r.c=r.c.map(c=>esHCod(c)&&c!=='D'?r.t||'':c);hGen(r);return r}
+function hBaseMes(ini,fin){const L0=lunesDe(ini),ks=Object.keys(S.hor||{}).filter(k=>/^\d{4}-\d{2}-\d{2}$/.test(k)&&k<=fin&&S.hor[k].asig&&Object.values(S.hor[k].asig).some(x=>x.c&&x.c.some(Boolean))).sort();const antes=ks.filter(k=>k<L0);return antes.length?antes[antes.length-1]:(ks[0]||null)}
+function hCelda(e,f){const L=lunesDe(f),fl=hFila(e.id,L);return fl&&fl.c?fl.c[hIdx(f)]||'':''}
+function hCorto(c){if(!c)return '';if(c==='D')return 'D';if(esHCod(c))return c;const m=RX_HH.exec(c);if(m)return m[1].replace(/:00$/,'')+'-'+m[2].replace(/:00$/,'');const hn=RX_HN.exec(c);if(hn)return hn[1]+'h';return c}
+function hEmpsMes(ini,fin){const vistos=new Set(),r=[];for(let L=lunesDe(ini);L<=fin;L=addDays(L,7))hEmps(L).forEach(e=>{if(!vistos.has(e.id)&&(!e.ingreso||e.ingreso<=fin)&&(!e.retiro||e.retiro>=ini)){vistos.add(e.id);r.push(e)}});return r}
+function horMes(){
+  const {mes,ini,fin}=hMesRango(),dias=[];for(let f=ini;f<=fin;f=addDays(f,1))dias.push(f);const emps=hEmpsMes(ini,fin);
+  const nom=new Date(ini+'T12:00:00Z').toLocaleDateString('es-CO',{month:'long',year:'numeric',timeZone:'UTC'}),nomM=nom.charAt(0).toUpperCase()+nom.slice(1);
+  const bg=c=>{const t=hTurno(c);if(t)return `color-mix(in srgb, ${t.color} 30%, var(--surface))`;if(c==='D')return 'var(--paper)';if(c==='V'||c==='L')return 'var(--accent-soft)';if(c&&esHCod(c))return 'var(--bad-soft)';if(RX_HH.test(c||''))return 'color-mix(in srgb, #8a6fd1 22%, var(--surface))';return 'var(--surface)'};
+  let vac=0;emps.forEach(e=>{if(dias.some(f=>(!e.ingreso||f>=e.ingreso)&&(!e.retiro||f<=e.retiro)&&!hCelda(e,f)))vac++});
+  const bse=hBaseMes(ini,fin),tieneBase=!!bse;
+  let h=`<div class="bar"><div class="weeknav"><button class="free" id="hmPrev" aria-label="Mes anterior">←</button><span class="lbl">${nomM}</span><button class="free" id="hmNext" aria-label="Mes siguiente">→</button></div>${sedeSelect('hSede')}<span class="grow"></span><button class="free" id="hXls">Descargar Excel del mes</button></div>
+  <div class="panel" style="padding:10px 14px;margin-bottom:10px"><b>Generar el horario de ${nom}</b>
+   <p class="status" style="margin:4px 0 8px">Toma la última semana con horario antes de cada semana vacía y la repite semana a semana hasta fin de mes, con las opciones de rotación que marque. ${tieneBase?`Semana de partida: la del ${fd(bse)} ${bse.slice(0,4)}.`:'<b>Primero arme al menos una semana</b> en «Registro fácil» o «Semana por turnos».'}</p>
+   <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><label class="chk"><input type="checkbox" id="hmSwap" checked> Intercambiar ${esc((S.config.hrot||['AP','CI'])[0])} ⇄ ${esc((S.config.hrot||['AP','CI'])[1])} cada semana</label><label class="chk"><input type="checkbox" id="hmMove" checked> Correr el descanso un día cada semana</label><label class="chk"><input type="checkbox" id="hmOver"> Reemplazar también las semanas que ya tienen horario</label>
+   <button class="free primary" id="hmGen"${tieneBase?'':' disabled'}>Generar ${nom}</button>${UI.hmAskClr?`<span class="confirm">¿Borrar el horario de todo ${nom}? <button class="free danger" id="hmClrY">Sí, borrar</button><button class="free" id="hmClrN">No</button></span>`:'<button class="ghost danger free" id="hmClr">Limpiar el mes</button>'}</div></div>`;
+  if(!emps.length)return h+`<div class="panel empty"><b>No hay empleados${UI.sede?' en este centro de costo':''} en ${nom}</b></div>`;
+  h+=vac?`<div class="alert" style="margin-bottom:8px">${vac} empleado(s) tienen días sin horario este mes. Use «Generar» o toque cada día para escogerlo.</div>`:`<div class="alert info" style="margin-bottom:8px">Todo el mes tiene horario. Toque cualquier día para cambiarlo.</div>`;
+  h+=`<div class="panel scroll fija"><table class="malla hmes" style="font-size:.78rem"><thead><tr><th class="sticky">Empleado</th>${dias.map(f=>{const fe=festivo(f),dw=dow(f);return `<th class="day${dw===0?' dom':''}${fe?' fest':''}" style="min-width:34px;padding:3px 2px"${fe?` title="${esc(fe)}"`:''}>${['D','L','M','M','J','V','S'][dw]}<span class="d">${+f.slice(8)}</span></th>`}).join('')}<th class="n">Horas</th><th class="n">Dom/fest trabajados</th><th class="n">Descansos</th></tr></thead><tbody>`;
+  emps.forEach(e=>{let min=0,df=0,desc=0;const semanas=new Set(dias.map(lunesDe));semanas.forEach(L=>hSemana(e.id,L).forEach(x=>{if(x.f>=ini&&x.f<=fin)min++}));
+    h+=`<tr><td class="emp sticky"><b>${esc(e.nombre)}</b><span>${esc(e.cargo||'')}</span></td>`;
+    dias.forEach(f=>{const fuera=(e.ingreso&&f<e.ingreso)||(e.retiro&&f>e.retiro),c=fuera?'':hCelda(e,f);if(c==='D')desc++;if(c&&!fuera&&(dow(f)===0||festivo(f))&&hRango(c,f))df++;
+      h+=`<td class="cell hmc${c==='D'?' rest':''}" ${fuera?'style="background:repeating-linear-gradient(45deg,var(--paper),var(--paper) 4px,var(--surface) 4px,var(--surface) 8px)" title="No estaba vinculado"':`data-hme="${e.id}" data-hmf="${f}" style="background:${bg(c)};cursor:pointer;text-align:center;padding:4px 2px;white-space:nowrap" title="${esc(fd(f)+': '+(hTexto(c,f)||'sin horario · toque para escoger'))}"`}>${fuera?'':c?`<b>${esc(hCorto(c))}</b>`:'<span class="status">·</span>'}</td>`});
+    h+=`<td class="n">${min?hrs(min):'—'}</td><td class="n">${df||'—'}</td><td class="n">${desc||'—'}</td></tr>`});
+  h+=`</tbody></table></div>${leyendaTurnos()}<div class="legend">${HCOD.map(([k,n])=>`<span><b>${k}</b> ${esc(n)}</span>`).join('')}</div>
+  <p class="note">El mes muestra los mismos horarios de las semanas: lo que cambie aquí aparece en «Semana por turnos», en el portal de empleados y en la nómina, y al revés. Para ver las horas extra y los recargos de cada semana use «Semana por turnos».</p>`;
+  return h}
+function bindHorMes(){const re=()=>renderHor();const {mes,ini,fin}=hMesRango();
+  const mv=d=>{const [y,m]=mes.split('-').map(Number);UI.hm=ymd(new Date(Date.UTC(y,m-1+d,1))).slice(0,7);UI.hmAskClr=false;saveUI();re()};
+  const pv=$('#hmPrev');if(pv)pv.onclick=()=>mv(-1);const nx=$('#hmNext');if(nx)nx.onclick=()=>mv(1);
+  const g=$('#hmGen');if(g)g.onclick=()=>{const swap=$('#hmSwap').checked,move=$('#hmMove').checked,over=$('#hmOver').checked,b0=hBaseMes(ini,fin),L0=lunesDe(ini);if(!b0)return toast('Primero arme al menos una semana de horario');let cnt=0;
+    const plant={};Object.entries((S.hor[b0]||{}).asig||{}).forEach(([id,fl])=>{if(fl.c&&fl.c.some(Boolean))plant[id]=fl});
+    for(let ws=addDays(b0,7);ws<=fin;ws=addDays(ws,7)){let t=false;
+      hEmps(ws).forEach(e=>{if(!plant[e.id])return;const cur=hFila(e.id,ws),llena=cur&&cur.c&&cur.c.some(x=>x),nueva=hRotar(plant[e.id],swap,move);
+        if(ws>=L0&&(!llena||over)){hSet(ws,e.id);S.hor[ws].asig[e.id]=nueva;plant[e.id]=nueva;t=true}else plant[e.id]=llena?cur:nueva});
+      if(t){hGuardar(ws);cnt++}}
+    re();toast(cnt?`Horario generado: ${cnt} semana(s) de ${new Date(ini+'T12:00:00Z').toLocaleDateString('es-CO',{month:'long',timeZone:'UTC'})}. Revise los festivos y ajuste lo que haga falta.`:'No había semanas vacías por llenar (marque «Reemplazar» para rehacerlas)')};
+  const cl=$('#hmClr');if(cl)cl.onclick=()=>{UI.hmAskClr=true;re()};const cn=$('#hmClrN');if(cn)cn.onclick=()=>{UI.hmAskClr=false;re()};
+  const cy=$('#hmClrY');if(cy)cy.onclick=()=>{let n=0;for(let f=ini;f<=fin;f=addDays(f,1)){const L=lunesDe(f),w=S.hor[L];if(!w||!w.asig)continue;Object.entries(w.asig).forEach(([id,fl])=>{if(UI.sede&&(S.emps[id]||{}).sede!==UI.sede)return;if(fl.c&&fl.c[hIdx(f)]){fl.c[hIdx(f)]='';if(fl.dd===hIdx(f))fl.dd=-1;n++}})}
+    for(let L=lunesDe(ini);L<=fin;L=addDays(L,7))if(S.hor[L])hGuardar(L);UI.hmAskClr=false;bitacora(`Limpió el horario de ${mes}`);re();toast(`Se borraron ${n} días del mes`)};
+  const opts=sel=>[`<option value="">— Sin horario</option>`,...gruposTurnos().map(([g,L])=>`<optgroup label="${esc(g)}">${L.map(t=>`<option value="${esc(t.code)}"${sel===t.code?' selected':''}>${esc(t.code)} · ${esc(t.nombre)}</option>`).join('')}</optgroup>`),`<optgroup label="Novedades">${HCOD.map(([k,n])=>`<option value="${k}"${sel===k?' selected':''}>${k} · ${esc(n)}</option>`).join('')}</optgroup>`,`<option value="*">Otro… (horario a mano)</option>`].join('');
+  document.querySelectorAll('td.hmc[data-hme]').forEach(td=>td.onclick=ev=>{if(td.querySelector('select')||!PERM.write)return;const e=S.emps[td.dataset.hme],f=td.dataset.hmf,c=hCelda(e,f);
+    td.innerHTML=`<select style="font-size:.75rem;min-width:150px;position:relative;z-index:3">${opts(c)}</select>`;const s=td.querySelector('select');s.focus();
+    const fin2=()=>{if(td.contains(s))re()};s.onblur=()=>setTimeout(fin2,150);
+    s.onchange=()=>{let v=s.value;if(v==='*'){const t=prompt('Horario de ese día (por ejemplo 07:00-15:00):',(hRango(c,f)&&hRango(c,f).i?hRango(c,f).i+'-'+hRango(c,f).f:'08:00-17:00'));if(!t)return re();const m=/^\s*(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\s*$/.exec(t);if(!m){toast('Escríbalo así: 07:00-15:00');return re()}v=m[1].padStart(5,'0')+'-'+m[2].padStart(5,'0')}
+      const L=lunesDe(f),fl=hSet(L,e.id),i=hIdx(f);fl.c[i]=v;if(v==='D'){if(fl.dd<0||!S.config.domOrdinario)fl.dd=i}else if(fl.dd===i)fl.dd=-1;hGuardar(L);re()}})}
 function resumenHor(){
   const P=periodo(UI.mes,UI.tipo),emps=empPeriodo(P);
   let h=`<div class="bar">${periodoCtl('h')}${sedeSelect('hSede')}<span class="grow"></span><button class="free" id="hXls">Descargar Excel del mes</button></div>
@@ -1427,11 +1479,12 @@ function bindHor(){
   document.querySelectorAll('[data-hdia]').forEach(x=>x.onchange=()=>{const o=[...document.querySelectorAll('[data-hdia]')].filter(y=>!y.checked).map(y=>+y.dataset.hdia);if(o.length>=7){x.checked=true;return toast('Deje al menos un día visible')}S.config.hOcultos=o;saveLocal();render()});
   document.querySelectorAll('[data-hpre]').forEach(b=>b.onclick=()=>{const p={dd:[0,[],1],ld:[1,[]],ls:[1,[0]],lv:[1,[6,0]]}[b.dataset.hpre];S.config.hExtra=!!p[2];hSetSem(p[0],p[1])});
   const hxc=$('#hExtraC');if(hxc)hxc.onchange=()=>{S.config.hExtra=hxc.checked;saveLocal();render()};
-  $('#hvF').onclick=()=>{UI.hv='fac';saveUI();re()};$('#hvS').onclick=()=>{UI.hv='sem';saveUI();re()};$('#hvR').onclick=()=>{UI.hv='res';saveUI();re()};$('#hvT').onclick=()=>{UI.hv='tur';saveUI();re()};
+  $('#hvF').onclick=()=>{UI.hv='fac';saveUI();re()};$('#hvS').onclick=()=>{UI.hv='sem';saveUI();re()};{const hm=$('#hvM');if(hm)hm.onclick=()=>{UI.hv='mes';saveUI();re()}}$('#hvR').onclick=()=>{UI.hv='res';saveUI();re()};$('#hvT').onclick=()=>{UI.hv='tur';saveUI();re()};
   const sd=$('#hSede');if(sd)sd.onchange=e=>{UI.sede=e.target.value;saveUI();re()};
   const xl=$('#hXls');if(xl)xl.onclick=excelHorarios;const xs=$('#hXlsS');if(xs)xs.onclick=excelSemana;
   if(UI.hv==='fac'){bindHorFacil(re);return}
   if(UI.hv==='res'){bindPeriodo('h',re);return}
+  if(UI.hv==='mes')return;
   bindSedeH(re);
   if(UI.hv==='tur'){
     document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const {out}=leerTurnos();out.splice(+b.dataset.del,1);S.config.hturnos=out;re()});
@@ -1579,7 +1632,7 @@ async function excelSemana(){
 }
 async function excelHorarios(){
   if(typeof ExcelJS==='undefined'){toast('No se pudo cargar el generador de Excel. Revise la conexión.');return}
-  const mes=UI.hv==='res'?UI.mes:addDays(UI.hw,3).slice(0,7),[y,m]=mes.split('-').map(Number),ini=`${mes}-01`,fin=ymd(new Date(Date.UTC(y,m,0)));
+  const mes=UI.hv==='res'?UI.mes:UI.hv==='mes'?hMesAct():addDays(UI.hw,3).slice(0,7),[y,m]=mes.split('-').map(Number),ini=`${mes}-01`,fin=ymd(new Date(Date.UTC(y,m,0)));
   const c=S.config,wb=new ExcelJS.Workbook(),NAVY='FF'+DC(),bd={style:'thin',color:{argb:'FFC9CED8'}},BOX={top:bd,left:bd,bottom:bd,right:bd},MONEY='#,##0';
   for(let L=lunesDe(ini);L<=fin;L=addDays(L,7))hojaSemanaXls(wb,L);
   const P=periodo(mes,'mensual'),rs=wb.addWorksheet('Resumen para nómina');rs.getCell(1,1).value=`${c.empresa} · Resumen de horarios para la nómina de ${tituloP(P)}`;rs.getCell(1,1).font={bold:true,size:13,color:{argb:NAVY}};
